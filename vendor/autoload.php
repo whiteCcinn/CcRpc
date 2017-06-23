@@ -12,7 +12,7 @@ spl_autoload_register('_autoload', false, true);
 set_exception_handler('exception_handler');
 
 // 错误处理
-set_error_handler('error_handler');
+//set_error_handler('error_handler');
 
 function _autoload($className)
 {
@@ -26,23 +26,25 @@ function _autoload($className)
     $file = implode(DIRECTORY_SEPARATOR, $file) . '.php';
   }
 
-  $path = __DIR__ . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . $file;
+  $path = __DIR__ . DIRECTORY_SEPARATOR . _NAMESPACE . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . $file;
+
 
   if (is_file($path))
   {
     require_once $path;
   } else
   {
+    echo $path . PHP_EOL;
     throw new AutoloadException('Autoload Fail');
   }
 }
 
-function exception_handler(Exception $e)
+function exception_handler($e)
 {
-  echo get_class($e) . ':' . $e->getMessage();
+  echo get_class($e) . ':' . $e->getMessage() . PHP_EOL;
 }
 
-function error_handler(Error $e)
+function error_handler()
 {
-  echo $e->getMessage();
+
 }
