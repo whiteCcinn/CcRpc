@@ -9,10 +9,12 @@
  * LastModified: June 23, 2017                            *
  * Author: Cai wenhui <471113744@qq.com>                  *
  *                                                        *
- * \**********************************************************/
+\**********************************************************/
 
 namespace CcRpc\protocol;
 
+
+use CcRpc\exception\ProtocolException;
 
 class BytesStream
 {
@@ -97,27 +99,32 @@ class BytesStream
   /**
    * 获取字节流中的单字节
    *
-   * @param int $pos
-   *
    * @return string
    */
-  public function getChar(int $pos = 0): string
+  public function getChar(): string
   {
-    if ($pos < $this->_length)
+    if ($this->_pos < $this->_length)
     {
-      return $this->_buffer[ $pos++ ];
+      return $this->_buffer[ $this->_pos++ ];
     }
 
     return '';
   }
 
-  public function doReadWhile($tag)
+  /**
+   * 一直读取到特定mark
+   *
+   * @param $mark
+   *
+   * @return string
+   */
+  public function doReadWhile($mark)
   {
-    $pos = strpos($this->_buffer, $tag, $this->_pos);
+    $pos = strpos($this->_buffer, $mark, $this->_pos);
     if ($pos !== false)
     {
       $s          = substr($this->_buffer, $this->_pos, $pos - $this->_pos);
-      $this->_pos = $pos + strlen($tag);
+      $this->_pos = $pos + strlen($mark);
     } else
     {
       $s          = substr($this->_buffer, $this->_pos);
@@ -126,4 +133,74 @@ class BytesStream
 
     return $s;
   }
+
+  public function readString($n)
+  {
+    $pos    = $this->_pos;
+    $buffer = $this->_buffer;
+    for ($i = 0; $i < $n; ++$i)
+    {
+      switch (ord($buffer[ $pos ]) >> 4)
+      {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        {
+          // 0xxx xxxx
+          ++$pos;
+          break;
+        }
+        case 12:
+        case 13:
+        {
+          // 110x xxxx   10xx xxxx
+          $pos += 2;
+          break;
+        }
+        case 14:
+        {
+          // 1110 xxxx  10xx xxxx  10xx xxxx
+          $pos += 3;
+          break;
+        }
+        case 15:
+        {
+          // 1111 0xxx  10xx xxxx  10xx xxxx  10xx xxxx
+          $pos += 4;
+          ++$i;
+          if ($i >= $n)
+          {
+            throw new ProtocolException('bad utf-8 encoding');
+          }
+          break;
+        }
+        default:
+        {
+          throw new ProtocolException('bad utf-8 encoding');
+        }
+      }
+    }
+
+    return $this->read($pos - $this->_pos);
+  }
+
+  public function read($n)
+  {
+    $s = substr($this->_buffer, $this->_pos, $n);
+    $this->skip($n);
+
+    return $s;
+  }
+
+  public function skip($n)
+  {
+    $this->_pos += $n;
+  }
+
+
 }

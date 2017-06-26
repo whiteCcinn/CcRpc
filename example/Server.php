@@ -6,9 +6,9 @@
 
 include_once '../vendor/autoload.php';
 
-function HelloWorld()
+function HelloWorld($data = [],$a)
 {
-  return __FUNCTION__;
+  return $a;
 }
 
 function Hi()

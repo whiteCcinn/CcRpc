@@ -25,9 +25,32 @@ class WriterProtocol
     $this->stream = $steam;
   }
 
+  /**
+   * 判断是否是UTF-8编码
+   *
+   * @param $str
+   *
+   * @return bool
+   */
   private static function _isUTF8($str)
   {
     return mb_detect_encoding($str, 'UTF-8', true) !== false;
+  }
+
+  /**
+   * 判断是否数组<List>
+   *
+   * @param array $a
+   *
+   * @return bool
+   */
+  private static function _isList(array $a)
+  {
+    $count = count($a);
+
+    return ($count === 0) ||
+        ((isset($a[0]) || array_key_exists(0, $a)) && (($count === 1) ||
+                (isset($a[ $count - 1 ]) || array_key_exists($count - 1, $a))));
   }
 
   /**
@@ -54,6 +77,59 @@ class WriterProtocol
     $this->stream->write(Marks::MarkBodyClose);
 
     return $this->stream->_length;
+  }
+
+  /**
+   * 追加参数字节流
+   *
+   * @param array $array
+   *
+   * @return int
+   */
+  public function appendArgsStream(array $array): int
+  {
+    $this->stream->write(Marks::MarkArgs);
+    $count = count($array);
+    if ($count > 0)
+    {
+      $this->stream->write((string)$count);
+    }
+    $this->stream->write(Marks::MarkBodyOpen);
+    for ($i = 0; $i < $count; $i++)
+    {
+      if (is_array($array[ $i ]))
+      {
+        $this->appendArgsStream($array[ $i ]);
+      } else
+      {
+        $this->appendSerializeStream($array[ $i ]);
+      }
+    }
+    $this->stream->write(Marks::MarkBodyClose);
+
+    return $this->stream->_length;
+  }
+
+  /**
+   * 追加关联数组(MAP)字节流
+   *
+   * @param array $map
+   */
+  public function appendAssocArrayStream(array $map)
+  {
+    $count = count($map);
+    $this->stream->write(Marks::MarkMap);
+    if ($count > 0)
+    {
+      $this->stream->write((string)$count);
+    }
+    $this->stream->write(Marks::MarkBodyOpen);
+    foreach ($map as $key => $value)
+    {
+      $this->appendSerializeStream($key);
+      $this->appendSerializeStream($value);
+    }
+    $this->stream->write(Marks::MarkBodyClose);
   }
 
   /**
@@ -100,15 +176,22 @@ class WriterProtocol
             $this->appendStringStream($val);
           }
           break;
-        case is_array($val):
-          /* do some thing*/
-          break;
-        case is_object($val):
-          /* do some thing*/
-          break;
         default:
           throw new ProtocolException('Not support to serialize this data');
       }
+    } elseif (is_array($val))
+    {
+      if (self::_isList($val))
+      {
+        $this->appendArgsStream($val);
+      } else
+      {
+        // 关联数组
+        $this->appendAssocArrayStream($val);
+      }
+    } elseif (is_object($val))
+    {
+      /* do some thing*/
     }
 
     return $this->stream->_length;

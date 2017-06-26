@@ -9,7 +9,7 @@ const _NAMESPACE = 'CcRpc';
 spl_autoload_register('_autoload', false, true);
 
 // 异常处理
-set_exception_handler('exception_handler');
+//set_exception_handler('exception_handler');
 
 // 错误处理
 //set_error_handler('error_handler');

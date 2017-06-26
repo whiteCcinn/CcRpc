@@ -28,7 +28,9 @@ class Marks
   const MarkUTF8Char   = 'u';
   const MarkString     = 's';
   const MarkObject     = 'o';
-  const MarkCollection = 'c';
+  const MarkCollection = 'c';      // 集合
+  const MarkArgs       = 'a';      // 索引数组 (LIST)
+  const MarkMap        = 'm';      // 关联数组 (MAP)
 
   /* Definition */
   const MarkSemicolon = ';';
@@ -37,9 +39,10 @@ class Marks
   const MarkQuote     = '"';
 
   /* Marks */
+  //  const MarkArgument  = 'A';
   const MarkFunctions = 'M';
   const MarkCall      = 'C';
   const MarkResult    = 'R';
-  const MarkArgument  = 'A';
   const MarkEnd       = 'q';
+  const MarkError     = 'E';
 }

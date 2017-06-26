@@ -15,8 +15,10 @@ namespace CcRpc\http;
 
 
 use CcRpc\exception\ClientException;
+use CcRpc\ini\ConfigIni;
 use CcRpc\protocol\BytesStream;
 use CcRpc\protocol\Marks;
+use CcRpc\protocol\ReadProtocol;
 use CcRpc\protocol\WriterProtocol;
 
 class Client
@@ -44,14 +46,16 @@ class Client
 
   public function __construct($uri)
   {
-    $this->$uri[]  = $uri;
+    $this->uri     = $uri;
     $this->_setter = new Setter([
                                     'timeout' => 5
                                 ]);
+    ConfigIni::loadIni(true);
   }
 
   /**
    * __call魔术方法
+   *
    * @param string $name
    * @param array  $arguments
    *
@@ -59,11 +63,17 @@ class Client
    */
   public function __call(string $name, array $arguments)
   {
-    $request  = $this->_createStream($name, $arguments);
+    $request = $this->_createStream($name, $arguments);
+    if(ConfigIni::$debug)
+    {
+      file_put_contents('package.log', var_export($request, true));
+    }
     $context  = $this->_createContext();
     $response = $this->_sendRequest($request, $context);
+    // 解析响应协议
+    $data = $this->_deProtocol($response);
 
-    return $response;
+    return $data;
   }
 
   /**
@@ -179,7 +189,10 @@ class Client
     $write->appendStringStream($method);
     if (count($arguments) > 0)
     {
-      $write->appendArrayStream($arguments);
+      for ($i = 0;$i<count($arguments);$i++)
+      {
+        $write->appendSerializeStream($arguments[$i]);
+      }
     }
     $stream->write(Marks::MarkEnd);
 
@@ -304,6 +317,40 @@ class Client
     }
 
     return $response;
+  }
 
+  /**
+   * 解析协议
+   *
+   * @param string $response
+   *
+   * @return string
+   * @throws ClientException
+   * @throws \Exception
+   */
+  private function _deProtocol(string $response)
+  {
+    if (empty($response)) throw new ClientException(__CLASS__ . ':' . __FUNCTION__ . " EOF");
+    if ($response[ strlen($response) - 1 ] !== Marks::MarkEnd)
+    {
+      throw new ClientException("Wrong Response: \r\n$response");
+    }
+
+    $stream = new BytesStream($response);
+    $reader = new ReadProtocol($stream);
+
+    $char   = $stream->getChar();
+    $result = '';
+    switch ($char)
+    {
+      case Marks::MarkResult:
+        $result = $reader->unpack();
+        break;
+      case Marks::MarkError:
+        throw new \Exception($reader->readString());
+        break;
+    }
+
+    return $result;
   }
 }
