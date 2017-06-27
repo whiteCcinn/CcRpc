@@ -16,9 +16,9 @@ CcRpc\src\ini\CcRpc.php.ini
 ```
 
 
-#Usage
+# Usage
 
-## 1. example 1. int 传递 
+## example 1. int 传递 
 
 ```
 $server = new \CcRpc\http\Client('http://www.yourhost.com/example/Server.php');
@@ -26,7 +26,7 @@ $result = $server->HelloWorld(1);
 var_dump($result);
 ```
 
-## 2. example 2. string 传递
+## example 2. string 传递
 
 ```
 $server = new \CcRpc\http\Client('http://www.yourhost.com/example/Server.php');
