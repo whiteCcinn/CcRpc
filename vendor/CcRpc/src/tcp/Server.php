@@ -26,6 +26,10 @@ class Server extends Service
 
   public $uriList = [];
 
+  public $_calls = [];
+
+  public $_names = [];
+
   public function __construct($url = null)
   {
     if (is_array($url))
@@ -35,6 +39,33 @@ class Server extends Service
     {
       array_push($this->uriList, $url);
     }
+  }
+
+  public function addFunction(string $funcName)
+  {
+    if (!is_callable($funcName))
+    {
+      throw new TcpServerException('Server does\'t not exits');
+    }
+    if (empty($alias))
+    {
+      $alias = $funcName;
+    }
+
+    $name = strtolower($alias);
+
+    if (!array_key_exists($name, $this->_calls))
+    {
+      $this->_names[] = $alias;
+    }
+
+    $call         = new \stdClass();
+    $call->method = $funcName;
+    $call->mode   = 0;
+
+    $this->_calls[ $name ] = $call;
+
+    return $this;
   }
 
   public function setNoDelay($value)

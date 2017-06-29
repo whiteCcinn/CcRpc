@@ -12,5 +12,5 @@
 
 return [
   /*support [dev|product]*/
-    'mode' => 'product'
+    'mode' => 'dev'
 ];
